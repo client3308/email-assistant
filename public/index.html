@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Email Assistant — Powered by GitHub Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+      <div class="brand-info">
+        <h1>Email Assistant</h1>
+        <span class="badge ai-badge copilot-badge" id="headerCopilotBadge">
+          <svg class="copilot-logo-svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+          </svg>
+          <span class="copilot-text">Copilot Powered</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="header-search">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchInput" placeholder="Search emails by sender, subject or body...">
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="btnNewSimulation" title="Simulate an incoming email">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>+ Simulate Email</span>
+      </button>
+
+      <button class="btn btn-icon" id="btnConfigModal" title="GitHub Copilot Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+
+      <!-- Replaced static placeholder avatar with dynamic Sign-In / User Profile menu -->
+      <div class="auth-section" id="authSection">
+        <!-- Rendered dynamically by app.js: Either Sign In button or User Profile Pill -->
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dual Pane Workspace -->
+  <main class="app-workspace">
+    <!-- Left Narrow Navigation: Email List like Gmail -->
+    <aside class="sidebar-inbox" id="inboxSidebar">
+      <div class="inbox-header">
+        <div class="inbox-title-row">
+          <h2>Inbox</h2>
+          <span class="unread-count-pill" id="unreadCount">0 unread</span>
+        </div>
+        <div class="filter-tabs">
+          <button class="tab active" data-filter="all">All</button>
+          <button class="tab" data-filter="unread">Unread</button>
+        </div>
+      </div>
+
+      <!-- Email Item List -->
+      <div class="email-list" id="emailList">
+        <!-- Rendered dynamically via app.js -->
+      </div>
+    </aside>
+
+    <!-- Right Pane: Reading Email & Copilot Recommended Response -->
+    <section class="detail-pane" id="detailPane">
+      <!-- Empty placeholder state if none selected -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h3>Select an email to view & respond</h3>
+        <p>Choose any message from the left inbox list. GitHub Copilot will immediately analyze the message and draft a personalized, ready-to-send reply.</p>
+      </div>
+
+      <!-- Active Email Content & Response Interface -->
+      <div class="detail-content" id="detailContent" style="display: none;">
+        <!-- Top Subject and Status Bar -->
+        <div class="mail-header-card">
+          <div class="mail-header-top">
+            <h2 class="email-subject-heading" id="viewSubject">Subject Line</h2>
+            <div class="subject-tags" id="statusTags"></div>
+          </div>
+
+          <div class="sender-info-row">
+            <div class="sender-avatar" id="viewAvatar">JD</div>
+            <div class="sender-text">
+              <div class="sender-name" id="viewSender">Sender Name</div>
+              <div class="sender-meta">
+                <span id="viewEmail">sender@example.com</span>
+                <span class="dot-separator">•</span>
+                <span id="viewDate">Today</span>
+              </div>
+            </div>
+            <div class="header-quick-actions">
+              <button class="btn btn-ghost" id="btnRefreshAi" title="Regenerate Copilot Response">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Regenerate Copilot</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column or Split Cards: Email Body & Recommendation -->
+        <div class="split-view-container">
+          <!-- Left Sub-panel: Senders Email Body -->
+          <div class="panel-card original-email-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span>Received Message Body</span>
+              </div>
+            </div>
+            <div class="email-body-content" id="viewBody">
+              <!-- Body text -->
+            </div>
+          </div>
+
+          <!-- Right Sub-panel: Recommended Response & Review/Edit to Send -->
+          <div class="panel-card ai-response-card">
+            <div class="card-header response-header">
+              <div class="card-title">
+                <span class="ai-sparkle copilot-sparkle">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/>
+                  </svg>
+                </span>
+                <span>Copilot Recommended Response</span>
+              </div>
+
+              <!-- Tone Selector -->
+              <div class="tone-controls">
+                <label for="toneSelect">Tone:</label>
+                <select id="toneSelect">
+                  <option value="professional" selected>Professional</option>
+                  <option value="casual">Friendly / Casual</option>
+                  <option value="urgent">Direct / Action-Oriented</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- AI Notice Bar -->
+            <div class="ai-status-banner" id="aiStatusBanner">
+              <span id="aiModelIndicator">Powered by GitHub Copilot (GPT-4o)</span>
+              <span class="ai-subhint" id="aiUserSignatureHint">Review & edit before sending</span>
+            </div>
+
+            <!-- Optional customization instruction prompt -->
+            <div class="custom-prompt-container">
+              <input type="text" id="customInstructionInput" placeholder="Add custom guidance (e.g. 'Politely decline' or 'Confirm 3 PM on Zoom')...">
+              <button class="btn btn-sm btn-primary" id="btnApplyInstruction">Apply</button>
+            </div>
+
+            <!-- Editable response area for the user to review and edit -->
+            <div class="response-editor-container">
+              <div class="editor-subbar">
+                <span>To: <strong id="replyToAddress">sender@example.com</strong></span>
+                <span>From: <strong id="replyFromAddress">alex.mercer@enterprise.io</strong></span>
+              </div>
+              <textarea id="replyTextarea" placeholder="GitHub Copilot recommended draft will appear here. You can review, edit, or customize anything before sending..."></textarea>
+            </div>
+
+            <!-- Action footer with Send, Copy, Discard -->
+            <div class="response-footer">
+              <div class="footer-left">
+                <button class="btn btn-ghost btn-sm" id="btnCopyReply">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  Copy Text
+                </button>
+                <span class="save-status" id="saveStatus">Draft ready</span>
+              </div>
+
+              <div class="footer-right">
+                <button class="btn btn-primary" id="btnSendReply">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  <span>Review & Send Reply</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Sign In / Account Authentication -->
+  <div class="modal-overlay" id="signInModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>Sign In to Email Assistant</h3>
+          <p class="modal-subtitle">Connect your identity and activate GitHub Copilot reply drafting</p>
+        </div>
+        <button class="modal-close" id="btnCloseSignIn">&times;</button>
+      </div>
+      
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" id="tabQuickSignIn">One-Click Profiles</button>
+        <button class="modal-tab-btn" id="tabCustomSignIn">Custom Account</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Quick Profiles View -->
+        <div id="quickSignInSection">
+          <p class="modal-desc">
+            Choose an authorized profile to immediately link your GitHub Copilot subscription and personalize your email signature:
+          </p>
+          <div class="preset-user-grid" id="presetUserGrid">
+            <!-- Rendered dynamically via app.js -->
+          </div>
+        </div>
+
+        <!-- Custom Account Form -->
+        <form id="customSignInForm" style="display: none;" onsubmit="return false;">
+          <div class="form-group">
+            <label for="customName">Full Name *</label>
+            <input type="text" id="customName" placeholder="e.g. Diamond Mutua" required>
+          </div>
+          <div class="form-group">
+            <label for="customEmail">Work Email *</label>
+            <input type="email" id="customEmail" placeholder="e.g. diamondmutua07@gmail.com" required>
+          </div>
+          <div class="form-group">
+            <label for="customRole">Professional Title / Role</label>
+            <input type="text" id="customRole" placeholder="e.g. Lead Systems Engineer">
+          </div>
+          <div class="form-group">
+            <label for="customGithub">GitHub Username (Optional)</label>
+            <input type="text" id="customGithub" placeholder="e.g. client3308">
+          </div>
+          <div class="modal-footer" style="padding: 16px 0 0 0; border: none;">
+            <button class="btn btn-secondary" id="btnCancelCustomSignIn" type="button">Back</button>
+            <button class="btn btn-primary" id="btnSubmitCustomSignIn" type="submit">Sign In & Save Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Profile / Signature -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit User Profile & Signature</h3>
+        <button class="modal-close" id="btnCloseProfile">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Your profile details are automatically used by GitHub Copilot to personalize greetings and sign-offs.
+        </p>
+        <div class="form-group">
+          <label for="profileName">Full Name</label>
+          <input type="text" id="profileName">
+        </div>
+        <div class="form-group">
+          <label for="profileEmail">Email Address</label>
+          <input type="email" id="profileEmail">
+        </div>
+        <div class="form-group">
+          <label for="profileRole">Professional Title / Signature</label>
+          <input type="text" id="profileRole">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelProfile">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveProfile">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: GitHub Copilot Settings -->
+  <div class="modal-overlay" id="configModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-with-badge">
+          <h3>GitHub Copilot Settings</h3>
+          <span class="copilot-connection-badge" id="copilotConnectionStatus">Checking...</span>
+        </div>
+        <button class="modal-close" id="btnCloseConfig">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          The assistant connects directly to your authorized GitHub Copilot subscription to craft executive-level email responses using modern LLM models.
+        </p>
+
+        <div class="form-group">
+          <label for="copilotModelSelect">AI Model</label>
+          <select id="copilotModelSelect">
+            <option value="gpt-4o" selected>GPT-4o (GitHub Copilot Recommended)</option>
+            <option value="gpt-4o-mini">GPT-4o Mini (High Speed)</option>
+            <option value="copilot">Copilot Chat General</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="apiKeyInput">GitHub Token / Copilot API Key (Optional Override)</label>
+          <input type="password" id="apiKeyInput" placeholder="Auto-detected from system Git Credential Helper">
+          <div class="key-status" id="keyStatusText">Detecting system credentials...</div>
+        </div>
+
+        <div class="test-connection-box">
+          <button class="btn btn-secondary btn-sm" id="btnTestCopilot">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Test Copilot Live Ping
+          </button>
+          <span class="test-result-text" id="testResultText"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelConfig">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveConfig">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Simulate New Incoming Email -->
+  <div class="modal-overlay" id="simModal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3>Simulate New Incoming Email</h3>
+        <button class="modal-close" id="btnCloseSim">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Inject a test email to observe GitHub Copilot contextual analysis and instant draft generation in real-time.
+        </p>
+        <div class="form-group">
+          <label>Sender Full Name</label>
+          <input type="text" id="simSender" value="David Sterling">
+        </div>
+        <div class="form-group">
+          <label>Sender Email Address</label>
+          <input type="email" id="simEmail" value="david.sterling@cloudnative-hub.org">
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <input type="text" id="simSubject" value="Request for API Integration Scope & Timeline">
+        </div>
+        <div class="form-group">
+          <label>Email Body</label>
+          <textarea id="simBody" rows="5">Hi team,
+
+We are reviewing your team's API specifications for the cloud telemetry connector. 
+
+Could you please confirm if your team supports OAuth 2.0 PKCE flow and what the expected throughput rate limits are per tenant?
+
+We hope to complete our security review by Thursday.
+
+Thanks,
+David Sterling</textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelSim">Cancel</button>
+        <button class="btn btn-primary" id="btnSubmitSim">Add to Inbox</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toastNotification"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

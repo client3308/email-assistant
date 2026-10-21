@@ -1,0 +1,25 @@
+{
+  "name": "email-assistant",
+  "version": "1.0.0",
+  "description": "AI Email Assistant powered by GitHub Copilot with dual-pane Gmail interface and smart reply drafting",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "email",
+    "assistant",
+    "copilot",
+    "github-copilot",
+    "ai",
+    "productivity"
+  ],
+  "author": "Diamond Mutua",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0"
+  }
+}

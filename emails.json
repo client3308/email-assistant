@@ -1,0 +1,42 @@
+[
+  {
+    "id": "mail_1",
+    "sender": "Sarah Jenkins",
+    "email": "sarah.jenkins@enterprise-tech.io",
+    "subject": "Q4 Product Strategy Roadmap and Client Delivery Sync",
+    "date": "10:24 AM",
+    "unread": false,
+    "avatarColor": "#4f46e5",
+    "body": "Hi Team,\n\nI hope you are having a productive week. Following up on yesterday's leadership sync, we need to finalize the deliverables for the Q4 Enterprise Client release.\n\nCould you please review the attached milestones and confirm if your team can commit to the sprint delivery date of November 15th? Also, let me know if you foresee any infrastructure bottlenecks on GCP.\n\nLooking forward to your quick confirmation so we can unblock the stakeholders.\n\nBest regards,\nSarah Jenkins\nDirector of Product Solutions"
+  },
+  {
+    "id": "mail_2",
+    "sender": "Alex Rivera",
+    "email": "alex.rivera@fintech-ventures.com",
+    "subject": "Follow-up on Partnership Proposal and Technical Due Diligence",
+    "date": "Yesterday",
+    "unread": false,
+    "avatarColor": "#059669",
+    "body": "Hello,\n\nThanks for taking the time to present the architecture demo on Tuesday. Our engineering committee was impressed by the low-latency pipeline.\n\nWe have compiled our initial technical due diligence questionnaire. Could you let us know when you might have 30 minutes next Monday or Tuesday to walk through security compliance (SOC2) and high-availability failover specs?\n\nWarm regards,\nAlex Rivera\nPrincipal Architect, FinTech Ventures"
+  },
+  {
+    "id": "mail_3",
+    "sender": "Elena Rostova",
+    "email": "elena.r@innovate-ai.org",
+    "subject": "Invitation: Keynote Speaker at Global AI Innovations Summit 2026",
+    "date": "Oct 14",
+    "unread": false,
+    "avatarColor": "#d97706",
+    "body": "Dear Colleague,\n\nOn behalf of the Global AI Innovations Summit Organizing Committee, it is our pleasure to invite you as an honored speaker for our virtual panel: 'Next-Generation Autonomous Agents and Enterprise Workflow Integration'.\n\nThe event takes place December 4-6, 2026. Please let us know if your schedule allows for a 35-minute keynote presentation or participation in the executive fireside panel.\n\nKindly RSVP by Friday so we can reserve your session slot.\n\nRespectfully,\nDr. Elena Rostova\nProgram Chair, GAIS 2026"
+  },
+  {
+    "id": "mail_4",
+    "sender": "Marcus Vance",
+    "email": "support@cloudmetric-monitoring.com",
+    "subject": "Urgent: Cloud Cluster Usage Spike Notification (Alert #9482)",
+    "date": "Oct 13",
+    "unread": false,
+    "avatarColor": "#dc2626",
+    "body": "Alert Notice: Automated CloudMetric Watchdog\n\nYour production compute cluster 'cluster-eu-west-primary' exceeded 85% sustained CPU and memory utilization over the past 4 hours.\n\nPlease investigate background query workers or consider enabling horizontal autoscaling to avoid request throttling during peak business hours.\n\nDashboard: https://status.cloudmetric.local/incidents/9482\n\n- CloudMetric Operations Team"
+  }
+]
