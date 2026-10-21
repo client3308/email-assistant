@@ -39,6 +39,12 @@
     </div>
 
     <div class="header-actions">
+      <!-- Live Gmail Connection Badge / Action Button -->
+      <button class="btn btn-secondary btn-gmail-header" id="btnGmailModal" title="Live Gmail Sync (arenawisdom66@gmail.com)">
+        <span class="gmail-pulse-dot" id="headerGmailDot"></span>
+        <span id="headerGmailText">Live Gmail</span>
+      </button>
+
       <button class="btn btn-secondary" id="btnNewSimulation" title="Simulate an incoming email">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19"/>
@@ -67,8 +73,17 @@
     <aside class="sidebar-inbox" id="inboxSidebar">
       <div class="inbox-header">
         <div class="inbox-title-row">
-          <h2>Inbox</h2>
-          <span class="unread-count-pill" id="unreadCount">0 unread</span>
+          <div class="inbox-title-left">
+            <h2>Inbox</h2>
+            <span class="unread-count-pill" id="unreadCount">0 unread</span>
+          </div>
+          <button class="btn btn-icon btn-sm" id="btnSyncInbox" title="Sync Live Gmail Inbox">
+            <svg id="syncIconSvg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
         </div>
         <div class="filter-tabs">
           <button class="tab active" data-filter="all">All</button>
@@ -106,7 +121,7 @@
           </div>
 
           <div class="sender-info-row">
-            <div class="sender-avatar" id="viewAvatar">JD</div>
+            <div class="sender-avatar" id="viewAvatar">AW</div>
             <div class="sender-text">
               <div class="sender-name" id="viewSender">Sender Name</div>
               <div class="sender-meta">
@@ -186,7 +201,7 @@
             <div class="response-editor-container">
               <div class="editor-subbar">
                 <span>To: <strong id="replyToAddress">sender@example.com</strong></span>
-                <span>From: <strong id="replyFromAddress">alex.mercer@enterprise.io</strong></span>
+                <span>From: <strong id="replyFromAddress">arenawisdom66@gmail.com</strong></span>
               </div>
               <textarea id="replyTextarea" placeholder="GitHub Copilot recommended draft will appear here. You can review, edit, or customize anything before sending..."></textarea>
             </div>
@@ -210,7 +225,7 @@
                     <line x1="22" y1="2" x2="11" y2="13"/>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                   </svg>
-                  <span>Review & Send Reply</span>
+                  <span id="sendReplyBtnText">Review & Send Reply</span>
                 </button>
               </div>
             </div>
@@ -219,6 +234,63 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal: Live Gmail Connection (arenawisdom66@gmail.com) -->
+  <div class="modal-overlay" id="gmailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>Connect Live Gmail</h3>
+          <p class="modal-subtitle">Synchronize real inbox & send live replies for <strong>arenawisdom66@gmail.com</strong></p>
+        </div>
+        <button class="modal-close" id="btnCloseGmail">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="gmail-guide-box">
+          <div class="guide-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>How to connect your Gmail Account</span>
+          </div>
+          <ol class="guide-steps">
+            <li>Ensure 2-Step Verification is ON in your Google Account.</li>
+            <li>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Google App Passwords</a>.</li>
+            <li>Select or type app name <code>Email Assistant</code> and click Create.</li>
+            <li>Copy the generated 16-character code (e.g. <code>abcd efgh ijkl mnop</code>) and paste it below.</li>
+          </ol>
+        </div>
+
+        <div class="form-group">
+          <label for="gmailEmailInput">Gmail Address</label>
+          <input type="email" id="gmailEmailInput" value="arenawisdom66@gmail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="gmailPasswordInput">Google App Password (16 characters)</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="gmailPasswordInput" placeholder="Paste 16-character App Password here...">
+            <button type="button" class="btn-toggle-pw" id="btnToggleGmailPw" title="Show/Hide">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="key-status" id="gmailStatusFeedback">Checking connection status...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary text-danger" id="btnDisconnectGmail" style="display: none; margin-right: auto;" type="button">Disconnect</button>
+        <button class="btn btn-secondary" id="btnCancelGmail" type="button">Cancel</button>
+        <button class="btn btn-primary btn-gmail-connect" id="btnConnectGmail" type="button">
+          <span id="btnConnectGmailText">Connect & Fetch Live Inbox</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: Sign In / Account Authentication -->
   <div class="modal-overlay" id="signInModal">
@@ -251,15 +323,15 @@
         <form id="customSignInForm" style="display: none;" onsubmit="return false;">
           <div class="form-group">
             <label for="customName">Full Name *</label>
-            <input type="text" id="customName" placeholder="e.g. Diamond Mutua" required>
+            <input type="text" id="customName" placeholder="e.g. Arena Wisdom" required>
           </div>
           <div class="form-group">
             <label for="customEmail">Work Email *</label>
-            <input type="email" id="customEmail" placeholder="e.g. diamondmutua07@gmail.com" required>
+            <input type="email" id="customEmail" placeholder="e.g. arenawisdom66@gmail.com" required>
           </div>
           <div class="form-group">
             <label for="customRole">Professional Title / Role</label>
-            <input type="text" id="customRole" placeholder="e.g. Lead Systems Engineer">
+            <input type="text" id="customRole" placeholder="e.g. Executive Lead">
           </div>
           <div class="form-group">
             <label for="customGithub">GitHub Username (Optional)</label>

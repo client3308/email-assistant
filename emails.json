@@ -1,5 +1,15 @@
 [
   {
+    "id": "mail_1792575369032",
+    "sender": "David Sterling",
+    "email": "david.sterling@cloudnative-hub.org",
+    "subject": "Request for API Integration Scope & Timeline",
+    "date": "Just now",
+    "unread": false,
+    "avatarColor": "#7c3aed",
+    "body": "Hi team,\n\nWe are reviewing your team's API specifications for the cloud telemetry connector. \n\nCould you please confirm if your team supports OAuth 2.0 PKCE flow and what the expected throughput rate limits are per tenant?\n\nWe hope to complete our security review by Thursday.\n\nThanks,\nDavid Sterling"
+  },
+  {
     "id": "mail_1",
     "sender": "Sarah Jenkins",
     "email": "sarah.jenkins@enterprise-tech.io",

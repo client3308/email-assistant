@@ -4,6 +4,9 @@ const https = require('https');
 const { execSync } = require('child_process');
 const express = require('express');
 const dotenv = require('dotenv');
+const { ImapFlow } = require('imapflow');
+const { simpleParser } = require('mailparser');
+const nodemailer = require('nodemailer');
 
 dotenv.config();
 
@@ -16,6 +19,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Default profiles for the Sign-In system
 const PRESET_USERS = [
+  {
+    id: "user_arena",
+    name: "Arena Wisdom",
+    email: "arenawisdom66@gmail.com",
+    role: "Executive Manager",
+    avatarColor: "#ea4335",
+    initials: "AW",
+    githubUsername: "client3308",
+    provider: "gmail",
+    copilotEnabled: true
+  },
   {
     id: "user_diamond",
     name: "Diamond Mutua",
@@ -40,8 +54,17 @@ const PRESET_USERS = [
   }
 ];
 
-// Current active session state (persisted or defaults to Diamond Mutua)
+// Current active session state (defaults to Arena Wisdom as requested)
 let currentUser = PRESET_USERS[0];
+
+// Live Gmail Configuration state
+let gmailConfig = {
+  email: process.env.GMAIL_USER || 'arenawisdom66@gmail.com',
+  appPassword: process.env.GMAIL_APP_PASSWORD || '',
+  isConnected: false,
+  lastSync: null,
+  error: null
+};
 
 // In-memory Copilot token cache
 let copilotSessionCache = {
@@ -196,6 +219,127 @@ async function getCopilotSessionToken() {
   });
 }
 
+// ==================== LIVE GMAIL IMAP / SMTP SERVICES ====================
+
+async function testGmailConnection(email, appPassword) {
+  const cleanPass = appPassword.replace(/\s+/g, '').trim();
+  const client = new ImapFlow({
+    host: 'imap.gmail.com',
+    port: 993,
+    secure: true,
+    auth: {
+      user: email.trim(),
+      pass: cleanPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    logger: false
+  });
+
+  await client.connect();
+  const mailbox = await client.getMailboxLock('INBOX');
+  mailbox.release();
+  await client.logout();
+  return true;
+}
+
+async function syncGmailInbox(limit = 20) {
+  if (!gmailConfig.email || !gmailConfig.appPassword) {
+    throw new Error('Gmail App Password required to sync live inbox');
+  }
+
+  const cleanPass = gmailConfig.appPassword.replace(/\s+/g, '').trim();
+  const client = new ImapFlow({
+    host: 'imap.gmail.com',
+    port: 993,
+    secure: true,
+    auth: {
+      user: gmailConfig.email.trim(),
+      pass: cleanPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    logger: false
+  });
+
+  await client.connect();
+  const lock = await client.getMailboxLock('INBOX');
+  const fetchedEmails = [];
+
+  try {
+    const status = await client.status('INBOX', { messages: true });
+    const totalMessages = status.messages;
+    if (totalMessages > 0) {
+      const fromSeq = Math.max(1, totalMessages - limit + 1);
+      const range = `${fromSeq}:*`;
+      for await (const message of client.fetch(range, { envelope: true, source: true, flags: true })) {
+        const parsed = await simpleParser(message.source);
+        const senderName = (parsed.from && parsed.from.value && parsed.from.value[0] && (parsed.from.value[0].name || parsed.from.value[0].address)) || 'Unknown Sender';
+        const senderEmail = (parsed.from && parsed.from.value && parsed.from.value[0] && parsed.from.value[0].address) || 'unknown@domain.com';
+        const dateStr = parsed.date ? new Date(parsed.date).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Today';
+
+        fetchedEmails.push({
+          id: 'gmail_' + message.uid,
+          sender: senderName,
+          email: senderEmail,
+          subject: parsed.subject || '(No Subject)',
+          date: dateStr,
+          unread: !message.flags.has('\\Seen'),
+          avatarColor: '#ea4335',
+          body: parsed.text || parsed.html || 'No message content available.',
+          isLiveGmail: true,
+          receivedAt: parsed.date || new Date()
+        });
+      }
+    }
+  } finally {
+    lock.release();
+    await client.logout();
+  }
+
+  const existing = loadEmails();
+  const nonGmail = existing.filter(e => !e.isLiveGmail);
+  const combined = [...fetchedEmails.reverse(), ...nonGmail];
+  saveEmails(combined);
+
+  gmailConfig.isConnected = true;
+  gmailConfig.lastSync = new Date().toISOString();
+  gmailConfig.error = null;
+
+  return { success: true, count: fetchedEmails.length, emails: combined };
+}
+
+async function sendLiveEmail(to, subject, text, fromName = 'Arena Wisdom') {
+  if (!gmailConfig.email || !gmailConfig.appPassword) {
+    return { sentLive: false, note: 'App password not set, simulated delivery' };
+  }
+
+  const cleanPass = gmailConfig.appPassword.replace(/\s+/g, '').trim();
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: gmailConfig.email.trim(),
+      pass: cleanPass
+    },
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  const info = await transporter.sendMail({
+    from: `"${fromName}" <${gmailConfig.email}>`,
+    to,
+    subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
+    text
+  });
+
+  return { sentLive: true, messageId: info.messageId };
+}
+
 // Fallback response generator if Copilot is offline or unauthenticated
 function generateFallbackResponse(email, tone = 'professional', userCustomInstructions = '', user = currentUser) {
   const senderFirstName = (email.sender || 'there').split(' ')[0] || 'there';
@@ -225,8 +369,8 @@ function generateFallbackResponse(email, tone = 'professional', userCustomInstru
     bodyRecommendation += '\n\nAdditional Note: ' + userCustomInstructions.trim();
   }
 
-  const signOffName = (user && user.name) ? user.name : 'Diamond Mutua';
-  const signOffRole = (user && user.role) ? user.role : 'Lead Systems Engineer';
+  const signOffName = (user && user.name) ? user.name : 'Arena Wisdom';
+  const signOffRole = (user && user.role) ? user.role : 'Executive Lead';
 
   return greeting + '\n\n' + bodyRecommendation + '\n\nBest regards,\n' + signOffName + '\n' + signOffRole;
 }
@@ -252,7 +396,7 @@ app.post('/api/auth/sign-in', (req, res) => {
     name: name.trim(),
     email: email.trim(),
     role: (role && role.trim()) || 'Professional User',
-    avatarColor: avatarColor || '#0284c7',
+    avatarColor: avatarColor || '#ea4335',
     initials,
     githubUsername: githubUsername || (provider === 'github' ? 'client3308' : ''),
     provider: provider || 'custom',
@@ -265,6 +409,115 @@ app.post('/api/auth/sign-in', (req, res) => {
 app.post('/api/auth/sign-out', (req, res) => {
   currentUser = null;
   res.json({ success: true, message: 'Signed out successfully' });
+});
+
+// ==================== LIVE GMAIL API ====================
+
+app.get('/api/gmail/status', (req, res) => {
+  res.json({
+    email: gmailConfig.email,
+    isConnected: gmailConfig.isConnected,
+    hasPassword: Boolean(gmailConfig.appPassword && gmailConfig.appPassword.trim()),
+    lastSync: gmailConfig.lastSync,
+    error: gmailConfig.error
+  });
+});
+
+app.post('/api/gmail/connect', async (req, res) => {
+  const { email, appPassword } = req.body;
+  const targetEmail = (email && email.trim()) || 'arenawisdom66@gmail.com';
+
+  if (!appPassword || !appPassword.trim()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Google App Password is required to connect live Gmail.'
+    });
+  }
+
+  try {
+    await testGmailConnection(targetEmail, appPassword);
+    
+    gmailConfig.email = targetEmail;
+    gmailConfig.appPassword = appPassword.trim();
+    gmailConfig.isConnected = true;
+    gmailConfig.error = null;
+
+    // Persist to .env
+    try {
+      const envPath = path.join(__dirname, '.env');
+      let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
+      
+      const updateEnvVar = (key, val) => {
+        const regex = new RegExp(`^${key}=.*$`, 'm');
+        if (regex.test(envContent)) {
+          envContent = envContent.replace(regex, `${key}=${val}`);
+        } else {
+          envContent += `\n${key}=${val}`;
+        }
+      };
+
+      updateEnvVar('GMAIL_USER', targetEmail);
+      updateEnvVar('GMAIL_APP_PASSWORD', appPassword.trim());
+      fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf-8');
+    } catch (e) {
+      console.error('Could not save Gmail creds to .env:', e);
+    }
+
+    // Immediately trigger initial sync
+    const syncResult = await syncGmailInbox(20);
+
+    // Switch active user to Arena Wisdom if matching
+    if (targetEmail.toLowerCase().includes('arenawisdom')) {
+      currentUser = PRESET_USERS[0];
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully connected to live Gmail (${targetEmail})!`,
+      email: targetEmail,
+      emailsSynced: syncResult.count
+    });
+  } catch (err) {
+    gmailConfig.isConnected = false;
+    gmailConfig.error = err.message;
+    res.status(401).json({
+      success: false,
+      error: `Gmail authentication failed: ${err.message}. Please verify your Google App Password (generate at myaccount.google.com/apppasswords).`
+    });
+  }
+});
+
+app.post('/api/gmail/sync', async (req, res) => {
+  try {
+    const result = await syncGmailInbox(25);
+    res.json({
+      success: true,
+      count: result.count,
+      lastSync: gmailConfig.lastSync
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+app.post('/api/gmail/disconnect', (req, res) => {
+  gmailConfig.isConnected = false;
+  gmailConfig.appPassword = '';
+  gmailConfig.lastSync = null;
+
+  try {
+    const envPath = path.join(__dirname, '.env');
+    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
+    envContent = envContent.replace(/^GMAIL_APP_PASSWORD=.*$/m, 'GMAIL_APP_PASSWORD=');
+    fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf-8');
+  } catch (e) {
+    console.error('Could not clear .env:', e);
+  }
+
+  res.json({ success: true, message: 'Disconnected from live Gmail.' });
 });
 
 // ==================== COPILOT CONFIG & TEST API ====================
@@ -306,13 +559,22 @@ app.post('/api/config', (req, res) => {
     process.env.COPILOT_MODEL = model.trim();
   }
   
-  // Clear cache so it re-authenticates with new settings
   copilotSessionCache = { token: null, expiresAt: 0, apiEndpoint: 'https://api.individual.githubcopilot.com' };
 
   try {
     const envPath = path.join(__dirname, '.env');
-    const content = `PORT=${PORT}\nCOPILOT_API_KEY=${process.env.COPILOT_API_KEY || ''}\nCOPILOT_MODEL=${process.env.COPILOT_MODEL || 'gpt-4o'}\n`;
-    fs.writeFileSync(envPath, content, 'utf-8');
+    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf-8') : '';
+    const updateEnvVar = (key, val) => {
+      const regex = new RegExp(`^${key}=.*$`, 'm');
+      if (regex.test(envContent)) {
+        envContent = envContent.replace(regex, `${key}=${val}`);
+      } else {
+        envContent += `\n${key}=${val}`;
+      }
+    };
+    updateEnvVar('COPILOT_API_KEY', process.env.COPILOT_API_KEY || '');
+    updateEnvVar('COPILOT_MODEL', process.env.COPILOT_MODEL || 'gpt-4o');
+    fs.writeFileSync(envPath, envContent.trim() + '\n', 'utf-8');
   } catch (e) {
     console.error('Could not save .env:', e);
   }
@@ -324,7 +586,6 @@ app.post('/api/config', (req, res) => {
   });
 });
 
-// Test Copilot connection
 app.post('/api/copilot/test', async (req, res) => {
   const startTime = Date.now();
   try {
@@ -413,7 +674,7 @@ app.post('/api/emails', (req, res) => {
   if (!sender || !subject || !body) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  const colors = ['#0284c7', '#059669', '#d97706', '#2563eb', '#7c3aed', '#db2777'];
+  const colors = ['#ea4335', '#0284c7', '#059669', '#d97706', '#2563eb', '#7c3aed'];
   const newEmail = {
     id: 'mail_' + Date.now(),
     sender,
@@ -438,9 +699,9 @@ app.post('/api/recommend-response', async (req, res) => {
   }
 
   const activeUser = userProfile || currentUser || {
-    name: 'Diamond Mutua',
-    role: 'Lead Systems Architect',
-    email: 'diamondmutua07@gmail.com'
+    name: 'Arena Wisdom',
+    role: 'Executive Manager',
+    email: 'arenawisdom66@gmail.com'
   };
 
   const model = process.env.COPILOT_MODEL || 'gpt-4o';
@@ -456,7 +717,7 @@ DESIRED TONE: ${tone}
 SENDER USER PROFILE (Drafting on behalf of):
 - Name: ${activeUser.name}
 - Title / Role: ${activeUser.role || 'Executive'}
-- Email: ${activeUser.email || ''}
+- Email: ${activeUser.email || 'arenawisdom66@gmail.com'}
 
 GUIDELINES:
 1. Address the recipient respectfully by their first name if clear.
@@ -526,7 +787,6 @@ Please draft the response email now:`;
       ? copilotResponse.choices[0].message.content.trim()
       : generateFallbackResponse(email, tone, instructions, activeUser);
 
-    // Strip unnecessary markdown code fences if model enclosed them
     const cleanReply = rawReply.replace(/^```[a-z]*\n/i, '').replace(/\n```$/g, '').trim();
 
     return res.json({
@@ -546,12 +806,23 @@ Please draft the response email now:`;
   }
 });
 
-// Send reply
-app.post('/api/send-reply', (req, res) => {
+// Send reply (Dispatches via live Gmail SMTP if connected!)
+app.post('/api/send-reply', async (req, res) => {
   const { emailId, to, subject, body, senderUser } = req.body;
-  const activeSender = senderUser || currentUser || { name: 'Alex Mercer', email: 'alex@example.com' };
+  const activeSender = senderUser || currentUser || { name: 'Arena Wisdom', email: 'arenawisdom66@gmail.com' };
 
   console.log(`[Email Sent] From: ${activeSender.name} <${activeSender.email}> | To: ${to} | Subject: Re: ${subject}`);
+
+  let liveDelivery = null;
+  if (gmailConfig.isConnected && gmailConfig.appPassword) {
+    try {
+      liveDelivery = await sendLiveEmail(to, subject, body, activeSender.name);
+      console.log('[Live Gmail SMTP] Successfully dispatched to:', to, 'MessageId:', liveDelivery.messageId);
+    } catch (e) {
+      console.error('[Live Gmail SMTP Error]:', e.message);
+      liveDelivery = { sentLive: false, error: e.message };
+    }
+  }
 
   const emails = loadEmails();
   const mail = emails.find(m => m.id === emailId);
@@ -561,14 +832,18 @@ app.post('/api/send-reply', (req, res) => {
     mail.lastReply = {
       from: `${activeSender.name} <${activeSender.email}>`,
       body,
-      sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      liveGmailDispatched: Boolean(liveDelivery && liveDelivery.sentLive)
     };
     saveEmails(emails);
   }
 
   res.json({
     success: true,
-    message: `Email reply successfully dispatched to ${to}`,
+    message: liveDelivery && liveDelivery.sentLive
+      ? `Email reply sent LIVE via Gmail (arenawisdom66@gmail.com) to ${to}!`
+      : `Email response recorded successfully (Local prototype draft)!`,
+    liveDelivered: Boolean(liveDelivery && liveDelivery.sentLive),
     sender: activeSender.name,
     timestamp: new Date().toISOString()
   });
@@ -577,6 +852,7 @@ app.post('/api/send-reply', (req, res) => {
 app.listen(PORT, () => {
   console.log('=======================================================');
   console.log(`  AI Email Assistant (Powered by GitHub Copilot)`);
+  console.log(`  Target Live Email: arenawisdom66@gmail.com`);
   console.log(`  Running at: http://localhost:${PORT}`);
   console.log('=======================================================');
 });

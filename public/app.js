@@ -10,11 +10,19 @@ let copilotConfig = {
   model: 'gpt-4o',
   statusMessage: 'Checking...'
 };
+let gmailStatus = {
+  email: 'arenawisdom66@gmail.com',
+  isConnected: false,
+  hasPassword: false,
+  lastSync: null
+};
 
 // DOM Elements - Navigation & Inbox
 const emailListEl = document.getElementById('emailList');
 const unreadCountEl = document.getElementById('unreadCount');
 const searchInput = document.getElementById('searchInput');
+const btnSyncInbox = document.getElementById('btnSyncInbox');
+const syncIconSvg = document.getElementById('syncIconSvg');
 
 // Detail Pane Elements
 const emptyStateEl = document.getElementById('emptyState');
@@ -37,9 +45,25 @@ const btnApplyInstruction = document.getElementById('btnApplyInstruction');
 const btnRefreshAi = document.getElementById('btnRefreshAi');
 const btnSendReply = document.getElementById('btnSendReply');
 const btnCopyReply = document.getElementById('btnCopyReply');
+const sendReplyBtnText = document.getElementById('sendReplyBtnText');
 const aiModelIndicator = document.getElementById('aiModelIndicator');
 const aiUserSignatureHint = document.getElementById('aiUserSignatureHint');
 const saveStatus = document.getElementById('saveStatus');
+
+// Live Gmail Elements
+const btnGmailModal = document.getElementById('btnGmailModal');
+const headerGmailDot = document.getElementById('headerGmailDot');
+const headerGmailText = document.getElementById('headerGmailText');
+const gmailModal = document.getElementById('gmailModal');
+const btnCloseGmail = document.getElementById('btnCloseGmail');
+const btnCancelGmail = document.getElementById('btnCancelGmail');
+const btnConnectGmail = document.getElementById('btnConnectGmail');
+const btnConnectGmailText = document.getElementById('btnConnectGmailText');
+const btnDisconnectGmail = document.getElementById('btnDisconnectGmail');
+const gmailEmailInput = document.getElementById('gmailEmailInput');
+const gmailPasswordInput = document.getElementById('gmailPasswordInput');
+const btnToggleGmailPw = document.getElementById('btnToggleGmailPw');
+const gmailStatusFeedback = document.getElementById('gmailStatusFeedback');
 
 // Auth & Profile Elements
 const authSection = document.getElementById('authSection');
@@ -87,6 +111,7 @@ const toastNotification = document.getElementById('toastNotification');
 document.addEventListener('DOMContentLoaded', async () => {
   await initAuth();
   await checkCopilotConfig();
+  await checkGmailStatus();
   await fetchEmails();
   setupEventListeners();
 });
@@ -99,7 +124,6 @@ async function initAuth() {
     const data = await res.json();
     presetUsers = data.presets || [];
 
-    // Check localStorage for preferred logged-in user
     const savedUserJson = localStorage.getItem('assistant_current_user');
     if (savedUserJson) {
       try {
@@ -113,12 +137,12 @@ async function initAuth() {
   } catch (err) {
     console.error('Failed to load user session:', err);
     currentUser = {
-      id: 'user_default',
-      name: 'Diamond Mutua',
-      email: 'diamondmutua07@gmail.com',
-      role: 'Full-Stack AI Architect',
-      avatarColor: '#0284c7',
-      initials: 'DM'
+      id: 'user_arena',
+      name: 'Arena Wisdom',
+      email: 'arenawisdom66@gmail.com',
+      role: 'Executive Lead',
+      avatarColor: '#ea4335',
+      initials: 'AW'
     };
   }
   renderAuthUI();
@@ -147,7 +171,7 @@ function renderAuthUI() {
   }
 
   const initials = currentUser.initials || currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const avatarColor = currentUser.avatarColor || '#0284c7';
+  const avatarColor = currentUser.avatarColor || '#ea4335';
 
   authSection.innerHTML = `
     <div class="user-menu-wrapper" id="userMenuWrapper">
@@ -211,10 +235,9 @@ function renderAuthUI() {
     replyFromAddress.textContent = `${currentUser.name} <${currentUser.email}>`;
   }
   if (aiUserSignatureHint) {
-    aiUserSignatureHint.textContent = `Signing as ${currentUser.name}`;
+    aiUserSignatureHint.textContent = `Signed as ${currentUser.name}`;
   }
 
-  // Attach dropdown toggle & action handlers
   const userMenuWrapper = document.getElementById('userMenuWrapper');
   const btnUserProfile = document.getElementById('btnUserProfile');
   if (btnUserProfile) {
@@ -253,7 +276,7 @@ function renderPresetGrid() {
     return `
       <div class="preset-user-card ${isActive ? 'active-user' : ''}" onclick="selectPresetUser('${user.id}')">
         <div class="preset-card-left">
-          <div class="preset-avatar" style="background-color: ${user.avatarColor || '#0284c7'};">
+          <div class="preset-avatar" style="background-color: ${user.avatarColor || '#ea4335'};">
             ${user.initials}
           </div>
           <div class="preset-info">
@@ -263,7 +286,7 @@ function renderPresetGrid() {
           </div>
         </div>
         <div class="preset-badge">
-          ${user.provider === 'github' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg> Copilot Linked' : 'Standard'}
+          ${user.provider === 'gmail' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Live Gmail' : user.provider === 'github' ? 'Copilot Linked' : 'Standard'}
         </div>
       </div>
     `;
@@ -287,7 +310,7 @@ async function selectPresetUser(userId) {
       signInModal.classList.remove('open');
       renderAuthUI();
       renderPresetGrid();
-      showToast(`Welcome back, ${currentUser.name}!`, 'success');
+      showToast(`Welcome, ${currentUser.name}!`, 'success');
       if (currentEmail) generateRecommendation(currentEmail);
     }
   } catch (err) {
@@ -381,6 +404,124 @@ async function saveProfile() {
   renderAuthUI();
   showToast('Profile updated!', 'success');
   if (currentEmail) generateRecommendation(currentEmail);
+}
+
+// ==================== LIVE GMAIL SERVICES ====================
+
+async function checkGmailStatus() {
+  try {
+    const res = await fetch('/api/gmail/status');
+    gmailStatus = await res.json();
+
+    if (gmailEmailInput) gmailEmailInput.value = gmailStatus.email || 'arenawisdom66@gmail.com';
+
+    if (gmailStatus.isConnected) {
+      btnGmailModal.className = 'btn btn-secondary btn-gmail-header connected';
+      headerGmailText.textContent = 'Live: ' + (gmailStatus.email || 'Gmail');
+      gmailStatusFeedback.textContent = 'Active: Connected to ' + gmailStatus.email + (gmailStatus.lastSync ? ' (Synced ' + new Date(gmailStatus.lastSync).toLocaleTimeString() + ')' : '');
+      gmailStatusFeedback.style.color = 'var(--accent-teal)';
+      btnDisconnectGmail.style.display = 'inline-flex';
+      btnConnectGmailText.textContent = 'Re-Sync Live Inbox';
+    } else {
+      btnGmailModal.className = 'btn btn-secondary btn-gmail-header';
+      headerGmailText.textContent = 'Connect Live Gmail';
+      if (gmailStatus.error) {
+        gmailStatusFeedback.textContent = 'Disconnected: ' + gmailStatus.error;
+        gmailStatusFeedback.style.color = 'var(--accent-rose)';
+      } else {
+        gmailStatusFeedback.textContent = 'Status: Not connected yet. Enter Google App Password to connect.';
+        gmailStatusFeedback.style.color = 'var(--text-muted)';
+      }
+      btnDisconnectGmail.style.display = 'none';
+      btnConnectGmailText.textContent = 'Connect & Fetch Live Inbox';
+    }
+  } catch (err) {
+    console.error('Failed to check Gmail status:', err);
+  }
+}
+
+async function connectLiveGmail() {
+  const email = gmailEmailInput.value.trim();
+  const appPassword = gmailPasswordInput.value.trim();
+
+  if (!email || !appPassword) {
+    gmailStatusFeedback.textContent = 'Please enter both your Gmail address and Google App Password.';
+    gmailStatusFeedback.style.color = 'var(--accent-rose)';
+    return;
+  }
+
+  btnConnectGmail.disabled = true;
+  btnConnectGmailText.textContent = 'Connecting to Gmail...';
+  gmailStatusFeedback.textContent = 'Verifying IMAP credentials on imap.gmail.com...';
+  gmailStatusFeedback.style.color = '#38bdf8';
+
+  try {
+    const res = await fetch('/api/gmail/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, appPassword })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast(data.message, 'success');
+      gmailModal.classList.remove('open');
+      await checkGmailStatus();
+      await fetchEmails();
+      // Auto-switch profile to Arena Wisdom
+      const arenaPreset = presetUsers.find(u => u.email === email) || {
+        name: 'Arena Wisdom',
+        email: email,
+        role: 'Executive Manager',
+        avatarColor: '#ea4335',
+        initials: 'AW'
+      };
+      currentUser = arenaPreset;
+      localStorage.setItem('assistant_current_user', JSON.stringify(currentUser));
+      renderAuthUI();
+    } else {
+      gmailStatusFeedback.textContent = data.error || 'Connection failed.';
+      gmailStatusFeedback.style.color = 'var(--accent-rose)';
+    }
+  } catch (err) {
+    gmailStatusFeedback.textContent = 'Network error connecting to Gmail server.';
+    gmailStatusFeedback.style.color = 'var(--accent-rose)';
+  } finally {
+    btnConnectGmail.disabled = false;
+    btnConnectGmailText.textContent = gmailStatus.isConnected ? 'Re-Sync Live Inbox' : 'Connect & Fetch Live Inbox';
+  }
+}
+
+async function syncLiveInbox() {
+  if (syncIconSvg) syncIconSvg.classList.add('spinning');
+  try {
+    const res = await fetch('/api/gmail/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Synced ${data.count} live emails from Gmail!`, 'success');
+      await fetchEmails();
+      await checkGmailStatus();
+    } else {
+      showToast('Live sync note: ' + (data.error || 'Please connect your App Password first'));
+      gmailModal.classList.add('open');
+    }
+  } catch (err) {
+    showToast('Failed to trigger inbox sync');
+  } finally {
+    if (syncIconSvg) syncIconSvg.classList.remove('spinning');
+  }
+}
+
+async function disconnectLiveGmail() {
+  try {
+    await fetch('/api/gmail/disconnect', { method: 'POST' });
+    gmailPasswordInput.value = '';
+    gmailModal.classList.remove('open');
+    showToast('Disconnected from live Gmail');
+    await checkGmailStatus();
+  } catch (e) {
+    showToast('Failed to disconnect');
+  }
 }
 
 // ==================== COPILOT CONFIGURATION ====================
@@ -507,7 +648,7 @@ function renderEmailList() {
     return `
       <div class="mail-item ${email.unread ? 'unread' : ''} ${isSelected ? 'selected' : ''}" onclick="selectEmail('${email.id}')">
         ${email.unread ? '<div class="unread-dot"></div>' : ''}
-        <div class="mail-avatar" style="background-color: ${email.avatarColor || '#0284c7'}">
+        <div class="mail-avatar" style="background-color: ${email.avatarColor || '#ea4335'}">
           ${initials}
         </div>
         <div class="mail-info">
@@ -517,6 +658,7 @@ function renderEmailList() {
           </div>
           <div class="mail-subject">${escapeHtml(email.subject)}</div>
           <div class="mail-snippet">${escapeHtml((email.body || '').substring(0, 60))}...</div>
+          ${email.isLiveGmail ? '<div class="live-gmail-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Live Gmail</div>' : ''}
           ${email.replied ? '<div class="replied-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> Replied</div>' : ''}
         </div>
       </div>
@@ -548,7 +690,7 @@ async function selectEmail(id) {
 
   const initials = (email.sender || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   viewAvatar.textContent = initials;
-  viewAvatar.style.backgroundColor = email.avatarColor || '#0284c7';
+  viewAvatar.style.backgroundColor = email.avatarColor || '#ea4335';
 
   replyToAddress.textContent = email.email;
   if (currentUser) {
@@ -556,6 +698,7 @@ async function selectEmail(id) {
   }
 
   let tagsHtml = '';
+  if (email.isLiveGmail) tagsHtml += '<span class="badge" style="background:#ea4335;color:#fff;">Live Gmail</span>';
   if (email.unread) tagsHtml += '<span class="badge" style="background:#0284c7;color:#fff;">New</span>';
   if (email.replied) tagsHtml += '<span class="badge" style="background:#10b981;color:#fff;">Replied</span>';
   statusTags.innerHTML = tagsHtml;
@@ -607,7 +750,7 @@ async function generateRecommendation(email) {
     }
   } catch (err) {
     console.error('Error generating recommendation:', err);
-    const signName = currentUser ? currentUser.name : 'Diamond Mutua';
+    const signName = currentUser ? currentUser.name : 'Arena Wisdom';
     replyTextarea.value = `Hi ${(email.sender || 'there').split(' ')[0]},\n\nThank you for reaching out regarding "${email.subject}".\n\nI am reviewing the deliverables with the team and will follow up shortly.\n\nBest regards,\n${signName}`;
     aiModelIndicator.textContent = 'Draft created (Offline fallback)';
   } finally {
@@ -627,7 +770,7 @@ async function handleSendReply() {
   }
 
   btnSendReply.disabled = true;
-  btnSendReply.innerHTML = 'Sending...';
+  sendReplyBtnText.textContent = 'Sending...';
 
   try {
     const res = await fetch('/api/send-reply', {
@@ -643,7 +786,7 @@ async function handleSendReply() {
     });
 
     const data = await res.json();
-    showToast(`Response sent to ${currentEmail.sender}!`, 'success');
+    showToast(data.message || `Response sent to ${currentEmail.sender}!`, 'success');
     currentEmail.replied = true;
     renderEmailList();
     statusTags.innerHTML = '<span class="badge" style="background:#10b981;color:#fff;">Replied</span>';
@@ -651,13 +794,7 @@ async function handleSendReply() {
     showToast('Failed to send reply');
   } finally {
     btnSendReply.disabled = false;
-    btnSendReply.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="22" y1="2" x2="11" y2="13"/>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-      </svg>
-      <span>Review & Send Reply</span>
-    `;
+    sendReplyBtnText.textContent = 'Review & Send Reply';
   }
 }
 
@@ -739,6 +876,24 @@ function setupEventListeners() {
       saveStatus.textContent = 'Ready to send';
     }, 1500);
   });
+
+  // Live Gmail Modal & Actions
+  btnGmailModal.addEventListener('click', () => {
+    checkGmailStatus();
+    gmailModal.classList.add('open');
+  });
+  btnCloseGmail.addEventListener('click', () => gmailModal.classList.remove('open'));
+  btnCancelGmail.addEventListener('click', () => gmailModal.classList.remove('open'));
+  btnConnectGmail.addEventListener('click', connectLiveGmail);
+  btnDisconnectGmail.addEventListener('click', disconnectLiveGmail);
+  btnSyncInbox.addEventListener('click', syncLiveInbox);
+
+  if (btnToggleGmailPw) {
+    btnToggleGmailPw.addEventListener('click', () => {
+      const type = gmailPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      gmailPasswordInput.setAttribute('type', type);
+    });
+  }
 
   // Auth / Sign In Modal
   btnCloseSignIn.addEventListener('click', () => signInModal.classList.remove('open'));
